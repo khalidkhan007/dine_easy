@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import './client/./client_signin/loginpg.dart';
 import './restaurant/./profile/profile.dart';
 import './restaurant/./signin/./loginpg.dart';
-
+import 'package:dine_easy/client/Home/HomePage.dart';
 void main() {
   runApp(const MyHomePage());
   // runApp(const MyApp());
@@ -74,9 +74,10 @@ class _MyHomePageState extends State<MyHomePage> {
             ]),
             title: Text("Dine Easy"),
           ),
-          body: const TabBarView(children: [
+          body:  TabBarView(children: [
             Home_2(),
-            Home_1(),
+           // Home_1(),
+            RestaurantHomePage(name: 'khalid',),
           ]),
         ),
       ),

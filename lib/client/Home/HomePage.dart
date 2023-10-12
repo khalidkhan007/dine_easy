@@ -6,7 +6,17 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../Home/Reservation.dart';
+
+import 'Reservation.dart';
+
 class RestaurantHomePage extends StatefulWidget {
+
+  //consturtor for home screen which recived name parameter
+   RestaurantHomePage({Key? key, required this.name});
+String name;
+
+
   @override
   _RestaurantHomePageState createState() => _RestaurantHomePageState();
 }
@@ -115,9 +125,9 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
 
   Future<void> fetchData() async {
     try {
+      print("sending request");
       final response = await http.get(
-          Uri.parse('http://192.168.0.102:8080/customer/signin/home'));
-
+          Uri.parse('https://sparkling-sarong-bass.cyclic.app/customer/signin/home'));
       if (response.statusCode == 200) {
         parsedData = parseJsonResponse(response.body);
         setState(() {
@@ -161,84 +171,90 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         final item = data[index];
-        return Card(
-          color: Colors.teal,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(25),
+        print(item);
+        return GestureDetector(
+          onTap:(){
+            Navigator.push(context, MaterialPageRoute(builder: (context) => Reservation( restaurantData: item, name: widget.name,),));
+          },
+          child: Card(
+            color: Colors.teal,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(25),
+              ),
             ),
-          ),
-          elevation: 4.0,
-          child: Container(
-            width: 120,
-            height: 120,
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: 10,
-                            ),
-                            CircleAvatar(
-                              radius: 45,
-                              backgroundColor: Colors.white,
-                              backgroundImage:
-                              AssetImage("Assets/images/13.png"),
-                              child: Text(
-                                item['name'][0],
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36.0,
+            elevation: 4.0,
+            child: Container(
+              width: 120,
+              height: 120,
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Container(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: 10,
+                              ),
+                              CircleAvatar(
+                                radius: 45,
+                                backgroundColor: Colors.white,
+                                backgroundImage:
+                                AssetImage("Assets/images/13.png"),
+                                child: Text(
+                                  item['name'][0],
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 36.0,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 7,
-                      child: Container(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: 20,
-                            ),
-                            Text(
-                              "Name: ${item['name']}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.0,
+                      Expanded(
+                        flex: 7,
+                        child: Container(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: 20,
                               ),
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              "Address: ${item['address']}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.0,
+                              Text(
+                                "Name: ${item['name']}",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14.0,
+                                ),
                               ),
-                            ),
-                          ],
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                "Address: ${item['address']}",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14.0,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

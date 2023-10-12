@@ -1,248 +1,421 @@
-import 'package:flutter/cupertino.dart';
+import 'package:dine_easy/main.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:maps_toolkit/maps_toolkit.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart'as http;
 import 'dart:convert';
 
-class RestaurantHomePage extends StatefulWidget {
+import '../../restaurant/menu/menu.dart';
+
+
+
+class Reservation extends StatefulWidget {
+
+  Reservation({required this.restaurantData,required this.name});
+  String name;
+  Map<String, dynamic> restaurantData;
   @override
-  _RestaurantHomePageState createState() => _RestaurantHomePageState();
+  _ReservationState createState() => _ReservationState();
+
 }
 
-class _RestaurantHomePageState extends State<RestaurantHomePage> {
-  bool isDataLoaded = false;
-  var parsedData;
-  TextEditingController searchController = TextEditingController();
-  List<Map<String, dynamic>> data = [];
-  List<Map<String, dynamic>> originalData = [];
-  List<Map<String, dynamic>> restaurantsWithin10Km = [];
+class _ReservationState extends State<Reservation> {
 
+
+  // Sample data for items, prices, and quantities
+  var items = ["Item A", "Item B", "Item C", "Item D", "Item E", "Item F"];
+  var prices = [101, 102, 103, 104, 107, 108];
+  var orderCounts = List<int>.filled(20, 0);
+  var totalPay = 0;
+  var total_Items=0;
+  List<String> menuItems = [];
+  List<int> menuPrices = [];
   @override
   void initState() {
     super.initState();
-    fetchData();
+   // sendRestaurantName(widget.name);
+    fetchMenu();
+  }
+
+
+  Future<void> fetchMenu() async {
+print("sdf");
+    try {
+      final response = await http.get(
+        Uri.parse('https://sparkling-sarong-bass.cyclic.app/customer/signin/home/menu'), // Replace with your API endpoint
+      );
+
+      if (response.statusCode == 200) {
+        print("hello");
+        final jsonResponse = json.decode(response.body);
+
+        setState(() {
+          menuItems = List<String>.from(jsonResponse['items']);
+          menuPrices = List<int>.from(jsonResponse['prices']);
+        });
+        print(menuItems);
+
+      } else {
+        print('Failed to fetch menu.');
+      }
+    } catch (e) {
+      print('Error fetching menu: $e');
+    }
+  }
+// Calculate the total
+  void calculateTotal() {
+    totalPay = 0;
+    total_Items=0;
+    for (var index = 0; index < items.length; index++) {
+      totalPay += orderCounts[index] * prices[index];
+      total_Items=total_Items+orderCounts[index];
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Call the calculateTotal function to calculate the total
+    calculateTotal();
+    print(widget.restaurantData);
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'HOME',
-          style: TextStyle(fontFamily: 'Pacifico'),
-        ),
-        backgroundColor: Colors.lightBlue,
-      ),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              calculateAndFilterRestaurantsWithin10Km();
-            },
-            child: Text("Calculate Distance"),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: 'Search for food...',
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: filterData,
-            ),
-          ),
-          Expanded(
-            child: isDataLoaded
-                ? buildDataList(restaurantsWithin10Km.isNotEmpty
-                ? restaurantsWithin10Km
-                : data)
-                : Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> calculateAndFilterRestaurantsWithin10Km() async {
-    try {
-      // Get the customer's current location
-      final Position customerLocation = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
-      );
-
-      // Clear the previous list of restaurants within 10 km
-      restaurantsWithin10Km.clear();
-
-      for (var restaurant in data) {
-        // Use geocoding to convert the restaurant's address into coordinates
-        List<Location> locations =
-        await locationFromAddress(restaurant['address']);
-        if (locations.isNotEmpty) {
-          double restaurantLatitude = locations[0].latitude;
-          double restaurantLongitude = locations[0].longitude;
-
-          // Calculate the distance between the customer's location and the restaurant
-          double distance = Geolocator.distanceBetween(
-            customerLocation.latitude,
-            customerLocation.longitude,
-            restaurantLatitude,
-            restaurantLongitude,
-          );
-
-          // Print the distance (in meters)
-          double distanceIntoKiloMeter = distance / 1000;
-
-          if (distanceIntoKiloMeter <= 10) {
-            // Add the restaurant to the list of restaurants within 10 km
-            restaurantsWithin10Km.add(restaurant);
-          }
-
-          print('Distance to restaurant: $distanceIntoKiloMeter kilo meters');
-        } else {
-          print('Unable to determine restaurant coordinates from address.');
-        }
-      }
-
-      // Update the UI with the filtered data
-      setState(() {});
-    } catch (e) {
-      print('Error during geocoding or distance calculation: $e');
-    }
-  }
-
-  Future<void> fetchData() async {
-    try {
-      final response = await http.get(
-          Uri.parse('http://192.168.0.102:8080/customer/signin/home'));
-
-      if (response.statusCode == 200) {
-        parsedData = parseJsonResponse(response.body);
-        setState(() {
-          data = parsedData;
-          originalData = parsedData;
-          isDataLoaded = true;
-        });
-      } else {
-        print('Failed to fetch data: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error while fetching data: $e');
-    }
-  }
-
-  void filterData(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        data = originalData;
-      });
-    } else {
-      final filteredData = originalData.where((item) {
-        final name = item['name'].toString().toLowerCase();
-        final address = item['address'].toString().toLowerCase();
-        return name.contains(query.toLowerCase()) ||
-            address.contains(query.toLowerCase());
-      }).toList();
-      setState(() {
-        data = filteredData;
-      });
-    }
-  }
-
-  List<Map<String, dynamic>> parseJsonResponse(String responseBody) {
-    final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
-    return parsed;
-  }
-
-  Widget buildDataList(List<Map<String, dynamic>> data) {
-    return ListView.builder(
-      itemCount: data.length,
-      itemBuilder: (context, index) {
-        final item = data[index];
-        return Card(
-          color: Colors.teal,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(25),
-            ),
-          ),
-          elevation: 4.0,
-          child: Container(
-            width: 120,
-            height: 120,
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: Text('Reservation Screen')),
+      body: SingleChildScrollView(
+        scrollDirection:  Axis.vertical,
+        child: Column(
+          children: [
+            //
+            Container(
+              width: 450,
+              height: 250,
+              child: Card(
+                color: Colors.blue,
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)
+                ),child:Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: 10,
-                            ),
-                            CircleAvatar(
-                              radius: 45,
-                              backgroundColor: Colors.white,
-                              backgroundImage:
-                              AssetImage("Assets/images/13.png"),
-                              child: Text(
-                                item['name'][0],
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    SizedBox(height: 10,),
+                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['name'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
+                    SizedBox(height: 10,),
+                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['email'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
+                    SizedBox(height: 10,),
+                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['address'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
+                  ],
+                ),
+              ) ,
+              ),
+            ),
+            //Services
+            Container(
+              width: 450,
+              height: 220,
+              child: Card(
+                color: Colors.blue,
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)
+                ),child:Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  //textDirection: TextDirection.ltr,
+                  children: [
+                    Center(child: Text(widget.restaurantData['services'],style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white,fontSize: 24),)),
+                    Divider(thickness: 2, color: Colors.lightBlue),
+
+                    Row(
+                      children: [
+                 //       Icon(
+                    //      Icons.restaurant,
+                      //    color: Colors.white,
+                        //  size: 24.0,
+                        //),
+                        SizedBox(width: 10.0), // Add some spacing between icon and text
+
+                      //  Text(" Quality Food and Beverage Preparation",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
+                      ],
                     ),
-                    Expanded(
-                      flex: 7,
-                      child: Container(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: 20,
-                            ),
-                            Text(
-                              "Name: ${item['name']}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.0,
-                              ),
-                            ),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              "Address: ${item['address']}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // SizedBox(height: 10,),
+                    Row(
+                      children: [
+                        //Icon(Icons.restaurant,color: Colors.white,),
+                        SizedBox(height: 10,),
+                        //Text("    Excellent Customer Service",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
+                      ],
+                    ),
+                    // SizedBox(height: 10,),
+                    Row(
+                      children: [
+                        //Icon(Icons.restaurant,color: Colors.white),
+                        //Text("    Clean and Inviting Atmosphere",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        //Icon(Icons.restaurant,color:Colors.white),
+                      //  Text("    Efficient Restaurant Management",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        //Icon(Icons.restaurant,color:Colors.white),
+                        //Text("    Marketing and Promotion",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ) ,
+              ),
             ),
-          ),
-        );
-      },
+            //Custome Services
+            SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Container(
+                width: 450,
+                height: 170,
+                child: Card(
+                  color: Colors.blue,
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          Center(
+                            child: Text(
+                              "Customer Services",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          TextField(maxLength: 2000,
+                            keyboardType: TextInputType.multiline, // Allow multiple lines
+                            maxLines: null, // Set maxLines to null for unlimited lines
+                            style: TextStyle(fontSize: 20.0, height: 1.5), // Adjust the line height as needed
+                            decoration: InputDecoration(
+                              labelText: "Customer Special Services",
+                              labelStyle: TextStyle(color: Colors.white),
+                              hintText: "Customer Special Services",
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            ),
+
+            //Menu display
+            //Menu display
+            Padding(
+              padding: const EdgeInsets.only(left: 5, top: 5, right: 5),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.blue,
+                ),
+                width: 100,
+                height: 40,
+                child: Center(
+                  child: Text(
+                    "Menu",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+//Menu chart
+            Padding(
+              padding: const EdgeInsets.only(left: 5, right: 5),
+              child: Container(
+                width: 450,
+                height: 350,
+                child: Card(
+                  color: Colors.blue,
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            textDirection: TextDirection.rtl,
+                            children: [
+                              SizedBox(height: 20),
+                              Text(
+                                "\t\t\t\t\t\t\t\t\t\t\t Quantity",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "\t\t\t\t\t\t\t\tPrices",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "   Items",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Divider(thickness: 2, color: Colors.lightBlue),
+                        Container(
+                          height: 400,
+                          child: ListView.builder(
+                            itemCount: menuItems.length,
+                            itemBuilder: (context, index) {
+                              return ListTile(
+                                title: Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "${menuItems[index]}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      "RS:${menuPrices[index]}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.remove_circle_outline,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              // Add your logic to handle quantity decrement
+                                            });
+                                          },
+                                        ),
+                                        Text(
+                                          "0", // Add your logic to get the actual quantity
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.add_circle_outline,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              // Add your logic to handle quantity increment
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            //Totel pay and Totel item
+            Container(
+              height: 100,
+              child: Column(
+                children: [
+                  SizedBox(height: 10,),
+
+                  Center(
+                    child: Text(
+                      "Total Pay: RS $totalPay",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10,),
+                  Center(
+                    child: Text(
+                      "Total Items:  $total_Items",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Make Reservation
+            ElevatedButton(
+              onPressed: () {
+                // Add your button's click action here
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // Button background color
+                elevation: 5, // Button elevation (shadow)
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0), // Rounded corners
+                ),
+                padding: EdgeInsets.symmetric(vertical: 15, horizontal: 40), // Button padding
+              ),
+              child: Text(
+                "Make Reservation",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white, // Text color
+                ),
+              ),
+            )
+
+          ],
+        ),
+      ),
     );
   }
 }

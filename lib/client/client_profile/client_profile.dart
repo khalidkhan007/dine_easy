@@ -98,7 +98,7 @@ class ProfileState extends State<Profile> {
        //Navigate to Menu screen
       Navigator.push(
          context,
-         MaterialPageRoute(builder: (context) => RestaurantHomePage()),
+         MaterialPageRoute(builder: (context) => RestaurantHomePage(name: widget.name,)),
        );
     } else if (index == 2) {
       // Navigate to Reservations screen

@@ -74,7 +74,7 @@ class _reservationsState extends State<reservations> {
       Navigator.push(
          context,
          MaterialPageRoute(
-             builder: (context) => RestaurantHomePage()),
+             builder: (context) => RestaurantHomePage(name: widget.name,)),
        );
     }
   }
