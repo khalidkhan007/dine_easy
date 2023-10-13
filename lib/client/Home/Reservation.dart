@@ -1,88 +1,138 @@
-import 'package:dine_easy/main.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart'as http;
+import 'package:http/http.dart' as http;
 import 'dart:convert';
+//import 'package:intl_extension/intl_extension.dart';
 
-import '../../restaurant/menu/menu.dart';
-
-
+//import 'package:intl/intl.dart';
 
 class Reservation extends StatefulWidget {
+  Reservation({required this.restaurantData, required this.name});
 
-  Reservation({required this.restaurantData,required this.name});
   String name;
   Map<String, dynamic> restaurantData;
+
   @override
   _ReservationState createState() => _ReservationState();
-
 }
 
 class _ReservationState extends State<Reservation> {
-
-
-  // Sample data for items, prices, and quantities
-  var items = ["Item A", "Item B", "Item C", "Item D", "Item E", "Item F"];
-  var prices = [101, 102, 103, 104, 107, 108];
-  var orderCounts = List<int>.filled(20, 0);
   var totalPay = 0;
-  var total_Items=0;
-  List<String> menuItems = [];
-  List<int> menuPrices = [];
+  var totalItems = 0;
+  Map<String, int> menuItems = {};
+  Map<String, int> quantitySelected = {};
+
   @override
   void initState() {
     super.initState();
-   // sendRestaurantName(widget.name);
-    fetchMenu();
+    fetchMenu(widget.name);
   }
 
 
-  Future<void> fetchMenu() async {
-print("sdf");
+
+
+
+//make a Reservation
+  Future<void> makeReservation() async {
+    final DateTime date1 = DateTime.now();
+
+  //  String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(date1);
+   // print(formattedDate);
+   // final DateTime date1 = DateTime.now();
+    print('khan1231$date1');
+    // Construct the reservation data
+    Map<String, dynamic> reservationData = {
+      "restaurant": widget.restaurantData['name'],
+      "name": "qazi 1",
+      "reservations": {
+        "reservationId2": {
+          "status": "Active",
+          "paymentstatus": "Pending",
+          "restaurant": widget.restaurantData['name'],
+          "customername": widget.name,
+          "reservation_details": "reserve at 10pm",
+          "menu": quantitySelected,
+        },
+      },
+    };
     try {
-      final response = await http.get(
-        Uri.parse('https://sparkling-sarong-bass.cyclic.app/customer/signin/home/menu'), // Replace with your API endpoint
+      final response = await http.put(
+        Uri.parse(
+            'https://sparkling-sarong-bass.cyclic.app/customer/signin/home/restaurant_details/reservation'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(reservationData),
       );
-
       if (response.statusCode == 200) {
-        print("hello");
-        final jsonResponse = json.decode(response.body);
-
-        setState(() {
-          menuItems = List<String>.from(jsonResponse['items']);
-          menuPrices = List<int>.from(jsonResponse['prices']);
-        });
-        print(menuItems);
-
+        // Reservation was successfully updated
+        print("Reservation updated successfully!");
       } else {
-        print('Failed to fetch menu.');
+        // Handle errors or display an error message
+        print('Failed to update reservation. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
       }
     } catch (e) {
-      print('Error fetching menu: $e');
+    //  print('Response body: ${response.body}');
+      // Handle connection or request errors
+      print('Error updating reservation: $e');
     }
   }
-// Calculate the total
+
+//make a FetchMenu
+  Future<void> fetchMenu(String name) async {
+    print("Sending request for restaurant details...");
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'https://sparkling-sarong-bass.cyclic.app/customer/signin/home/restaurant_details'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({'name': widget.restaurantData['name']}),
+      );
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+
+        print("Restaurant details received:");
+        print(jsonResponse);
+
+        setState(() {
+          menuItems = Map<String, int>.from(jsonResponse['menu']);
+        });
+        print(menuItems);
+      } else {
+        print(
+            'Failed to fetch restaurant details. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending restaurant name: $e');
+    }
+  }
+
   void calculateTotal() {
     totalPay = 0;
-    total_Items=0;
-    for (var index = 0; index < items.length; index++) {
-      totalPay += orderCounts[index] * prices[index];
-      total_Items=total_Items+orderCounts[index];
-    }
+    totalItems = 0;
+    quantitySelected.forEach((itemName, quantity) {
+      int itemPrice = menuItems[itemName] ?? 0;
+      totalPay += itemPrice * quantity;
+      totalItems += quantity;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Call the calculateTotal function to calculate the total
     calculateTotal();
-    print(widget.restaurantData);
 
     return Scaffold(
       appBar: AppBar(title: Text('Reservation Screen')),
       body: SingleChildScrollView(
-        scrollDirection:  Axis.vertical,
+        scrollDirection: Axis.vertical,
         child: Column(
           children: [
-            //
             Container(
               width: 450,
               height: 250,
@@ -90,23 +140,56 @@ print("sdf");
                 color: Colors.blue,
                 elevation: 5,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)
-                ),child:Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    SizedBox(height: 10,),
-                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['name'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
-                    SizedBox(height: 10,),
-                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['email'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
-                    SizedBox(height: 10,),
-                    TextField(decoration: InputDecoration(label: Text(widget.restaurantData['address'],style: TextStyle(color: Colors.white),),hintText:("Name") ,border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white))),),
-                  ],
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ) ,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          label: Text(
+                            widget.restaurantData['name'],
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          hintText: ("Name"),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          label: Text(
+                            widget.restaurantData['email'],
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          hintText: ("Name"),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          label: Text(
+                            widget.restaurantData['address'],
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          hintText: ("Name"),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            //Services
             Container(
               width: 450,
               height: 220,
@@ -114,62 +197,30 @@ print("sdf");
                 color: Colors.blue,
                 elevation: 5,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)
-                ),child:Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  //textDirection: TextDirection.ltr,
-                  children: [
-                    Center(child: Text(widget.restaurantData['services'],style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white,fontSize: 24),)),
-                    Divider(thickness: 2, color: Colors.lightBlue),
-
-                    Row(
-                      children: [
-                 //       Icon(
-                    //      Icons.restaurant,
-                      //    color: Colors.white,
-                        //  size: 24.0,
-                        //),
-                        SizedBox(width: 10.0), // Add some spacing between icon and text
-
-                      //  Text(" Quality Food and Beverage Preparation",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
-                      ],
-                    ),
-                    // SizedBox(height: 10,),
-                    Row(
-                      children: [
-                        //Icon(Icons.restaurant,color: Colors.white,),
-                        SizedBox(height: 10,),
-                        //Text("    Excellent Customer Service",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
-                      ],
-                    ),
-                    // SizedBox(height: 10,),
-                    Row(
-                      children: [
-                        //Icon(Icons.restaurant,color: Colors.white),
-                        //Text("    Clean and Inviting Atmosphere",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        //Icon(Icons.restaurant,color:Colors.white),
-                      //  Text("    Efficient Restaurant Management",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        //Icon(Icons.restaurant,color:Colors.white),
-                        //Text("    Marketing and Promotion",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),),
-                      ],
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ) ,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Text(
+                          widget.restaurantData['services'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 24,
+                          ),
+                        ),
+                      ),
+                      Divider(thickness: 2, color: Colors.lightBlue),
+                    ],
+                  ),
+                ),
               ),
             ),
-            //Custome Services
             SingleChildScrollView(
               scrollDirection: Axis.vertical,
               child: Container(
@@ -197,10 +248,11 @@ print("sdf");
                             ),
                           ),
                           SizedBox(height: 10),
-                          TextField(maxLength: 2000,
-                            keyboardType: TextInputType.multiline, // Allow multiple lines
-                            maxLines: null, // Set maxLines to null for unlimited lines
-                            style: TextStyle(fontSize: 20.0, height: 1.5), // Adjust the line height as needed
+                          TextField(
+                            maxLength: 2000,
+                            keyboardType: TextInputType.multiline,
+                            maxLines: null,
+                            style: TextStyle(fontSize: 20.0, height: 1.5),
                             decoration: InputDecoration(
                               labelText: "Customer Special Services",
                               labelStyle: TextStyle(color: Colors.white),
@@ -216,11 +268,7 @@ print("sdf");
                   ),
                 ),
               ),
-
             ),
-
-            //Menu display
-            //Menu display
             Padding(
               padding: const EdgeInsets.only(left: 5, top: 5, right: 5),
               child: Container(
@@ -241,7 +289,6 @@ print("sdf");
                 ),
               ),
             ),
-//Menu chart
             Padding(
               padding: const EdgeInsets.only(left: 5, right: 5),
               child: Container(
@@ -262,8 +309,8 @@ print("sdf");
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.end,
-                            textDirection: TextDirection.rtl,
-                            children: [
+                            textDirection: TextDirection.ltr, // or TextDirecti
+                            children: const [
                               SizedBox(height: 20),
                               Text(
                                 "\t\t\t\t\t\t\t\t\t\t\t Quantity",
@@ -273,7 +320,7 @@ print("sdf");
                                 ),
                               ),
                               Text(
-                                "\t\t\t\t\t\t\t\tPrices",
+                                "\t\t\t\t\t\t\t\t\tPrices",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -289,26 +336,32 @@ print("sdf");
                             ],
                           ),
                         ),
+
                         Divider(thickness: 2, color: Colors.lightBlue),
                         Container(
                           height: 400,
                           child: ListView.builder(
                             itemCount: menuItems.length,
                             itemBuilder: (context, index) {
+                              String itemName = menuItems.keys.elementAt(index);
+                              int itemPrice = menuItems[itemName]!;
+                              int selectedQuantity =
+                                  quantitySelected[itemName] ?? 0;
+
                               return ListTile(
                                 title: Row(
                                   mainAxisAlignment:
                                   MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      "${menuItems[index]}",
+                                      itemName,
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      "RS:${menuPrices[index]}",
+                                      "$itemPrice",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -316,34 +369,40 @@ print("sdf");
                                     ),
                                     Row(
                                       children: [
-                                        IconButton(
-                                          icon: Icon(
-                                            Icons.remove_circle_outline,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: () {
+                                        GestureDetector(
+                                          onTap: () {
                                             setState(() {
-                                              // Add your logic to handle quantity decrement
+                                              if (selectedQuantity > 0) {
+                                                quantitySelected[itemName] =
+                                                    selectedQuantity - 1;
+                                              }
                                             });
                                           },
+                                          child: const Icon(
+                                            Icons.remove,
+                                            color: Colors.white,
+                                          ),
                                         ),
+                                        SizedBox(width: 8),
                                         Text(
-                                          "0", // Add your logic to get the actual quantity
+                                          "$selectedQuantity",
                                           style: TextStyle(
-                                            fontWeight: FontWeight.bold,
                                             color: Colors.white,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        IconButton(
-                                          icon: Icon(
-                                            Icons.add_circle_outline,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: () {
+                                        SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: () {
                                             setState(() {
-                                              // Add your logic to handle quantity increment
+                                              quantitySelected[itemName] =
+                                                  selectedQuantity + 1;
                                             });
                                           },
+                                          child: Icon(
+                                            Icons.add,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -359,13 +418,11 @@ print("sdf");
                 ),
               ),
             ),
-            //Totel pay and Totel item
             Container(
               height: 100,
               child: Column(
                 children: [
-                  SizedBox(height: 10,),
-
+                  SizedBox(height: 10),
                   Center(
                     child: Text(
                       "Total Pay: RS $totalPay",
@@ -376,10 +433,10 @@ print("sdf");
                       ),
                     ),
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   Center(
                     child: Text(
-                      "Total Items:  $total_Items",
+                      "Total Items:  $totalItems",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -390,32 +447,31 @@ print("sdf");
                 ],
               ),
             ),
-            // Make Reservation
             ElevatedButton(
               onPressed: () {
-                // Add your button's click action here
+                makeReservation();               // Add your button's click action here
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue, // Button background color
-                elevation: 5, // Button elevation (shadow)
+                backgroundColor: Colors.blue,
+                elevation: 5,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0), // Rounded corners
+                  borderRadius: BorderRadius.circular(20.0),
                 ),
-                padding: EdgeInsets.symmetric(vertical: 15, horizontal: 40), // Button padding
+                padding: EdgeInsets.symmetric(vertical: 15, horizontal: 40),
               ),
               child: Text(
                 "Make Reservation",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Text color
+                  color: Colors.white,
                 ),
               ),
             )
-
           ],
         ),
       ),
     );
   }
+
 }
