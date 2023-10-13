@@ -33,6 +33,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   void initState() {
     super.initState();
     fetchData();
+    calculateAndFilterRestaurantsWithin10Km();
   }
 
   @override
@@ -82,6 +83,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       final Position customerLocation = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.best,
       );
+     // print("khan123");
 
       // Clear the previous list of restaurants within 10 km
       restaurantsWithin10Km.clear();
@@ -115,7 +117,6 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
           print('Unable to determine restaurant coordinates from address.');
         }
       }
-
       // Update the UI with the filtered data
       setState(() {});
     } catch (e) {
