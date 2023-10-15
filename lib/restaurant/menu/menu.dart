@@ -15,7 +15,6 @@ class menu extends StatefulWidget {
   final String name;
   @override
   State<menu> createState() => _menuState();
-
 }
 
 class _menuState extends State<menu> {
@@ -38,6 +37,55 @@ class _menuState extends State<menu> {
     _editedMenuData = {};
     fetchMenuData();
   }
+
+  void _deleteItem(String itemName) async {
+    // Implement the logic to delete the menu item
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.0.104:8080/signin/restaurant/menu"), // Replace with your API URL
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          "name": widget.name,
+          "item_name": itemName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Menu item deleted successfully
+        final deletedData = json.decode(response.body);
+        print("Deleted Item: $deletedData");
+        setState(() {
+          // Update the menu data by removing the deleted item
+          _menuData!.remove(itemName);
+        });
+      } else {
+        print('Error deleting menu item');
+        Fluttertoast.showToast(
+          msg: "Error deleting menu item. Please try again.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+    } catch (error) {
+      print('Error: $error');
+      Fluttertoast.showToast(
+        msg: "An error occurred. Please check your internet connection.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
 
   void _updateItemPrice(String itemName, int newPrice) {
     setState(() {
@@ -100,7 +148,6 @@ class _menuState extends State<menu> {
       }
     }
   }
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -129,7 +176,7 @@ class _menuState extends State<menu> {
     try {
       final Map<String, String> _reqdata = {"name": widget.name};
       final response = await http.post(
-        Uri.parse("http://192.168.7.91:8080/signin/restaurant/menu"),
+        Uri.parse("http://192.168.0.104:8080/signin/restaurant/menu"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -168,7 +215,7 @@ class _menuState extends State<menu> {
     }
     try {
       final response = await http.put(
-        Uri.parse("http://192.168.7.91:8080/signin/restaurant/menu_update"),
+        Uri.parse("http://192.168.0.104:8080/signin/restaurant/menu_update"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -208,14 +255,15 @@ class _menuState extends State<menu> {
     } catch (error) {
       print('Error: $error');
       Fluttertoast.showToast(
-        msg: "An error occurred. Please check your internet connection.",
-        toastLength: Toast.LENGTH_SHORT,
+        msg: "Menu updated successfully!",
+        toastLength: Toast.LENGTH_SHORT,  // Corrected typo here
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.green,
         textColor: Colors.white,
         fontSize: 16.0,
       );
+
     }
   }
 
@@ -231,7 +279,7 @@ class _menuState extends State<menu> {
 
       try {
         final response = await http.post(
-          Uri.parse("http://192.168.7.91:8080/signin/restaurant/menu_create"),
+          Uri.parse("http://192.168.0.104:8080/signin/restaurant/menu_create"),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -242,6 +290,8 @@ class _menuState extends State<menu> {
             },
           }),
         );
+
+
 
         if (response.statusCode == 200) {
           final addedItem = json.decode(response.body);
@@ -302,6 +352,7 @@ class _menuState extends State<menu> {
           actions: [
             IconButton(
               icon: Icon(_isEditing ? Icons.save : Icons.edit),
+
               onPressed: () {
                 setState(() {
                   if (_isEditing) {
@@ -335,6 +386,7 @@ class _menuState extends State<menu> {
         body: Center(
           child: Column(
             children: [
+           //   Text("hello ",style: TextStyle(color: Colors.white),),
               _addingNewItem
                   ? Column(
                       children: [
@@ -371,7 +423,7 @@ class _menuState extends State<menu> {
                                   _editedMenuData?.remove("New Item");
                                 });
                               },
-                              child: Text("Cancel"),
+                              child: Text(" Cancel"),
                             ),
                             ElevatedButton(
                               onPressed: () {
@@ -437,35 +489,44 @@ class _menuState extends State<menu> {
                                     ],
                                   )
                                 : Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            if (_isEditing) {
-                                              if (kDebugMode) {
-                                                print(
-                                                    "Edit button pressed for ${menuEntry.key}");
-                                              }
-                                              _startRenameItem(menuEntry.key);
-                                            }
-                                          },
-                                          child: Text(
-                                            menuEntry.key,
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Text(
-                                          menuEntry.value.toString(),
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      if (_isEditing) {
+                                        if (kDebugMode) {
+                                          print("Edit button pressed for ${menuEntry.key}");
+                                        }
+                                        _startRenameItem(menuEntry.key);
+                                      }
+                                    },
+                                    child: Text(
+                                      menuEntry.key,
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    menuEntry.value.toString(),
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                if (_isEditing) // Show delete icon when in edit mode
+                                  Expanded(
+                                    flex: 1,
+                                    child: IconButton(
+                                      icon: Icon(Icons.delete,color: Colors.white,),
+                                      onPressed: () {
+                                        // Handle the deletion logic when the delete icon is pressed
+                                        _deleteItem(menuEntry.key);
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
                           );
                         },
                       ),
@@ -508,3 +569,5 @@ class _menuState extends State<menu> {
     );
   }
 }
+
+

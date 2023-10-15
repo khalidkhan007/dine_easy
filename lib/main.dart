@@ -1,6 +1,7 @@
 import 'package:dine_easy/payment/Bank_card.dart';
 import 'package:dine_easy/payment/Wallet.dart';
 import 'package:dine_easy/payment/payment.dart';
+import 'package:dine_easy/restaurant/menu/menu.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './client/./client_signin/loginpg.dart';
@@ -79,8 +80,9 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           body:  TabBarView(children: [
             Home_2(),
+            menu(name: 'qazi', token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbS9nb29nbGUuaWRlbnRpdHkuaWRlbnRpdHl0b29sa2l0LnYxLklkZW50aXR5VG9vbGtpdCIsImlhdCI6MTY5NzM3MDczMSwiZXhwIjoxNjk3Mzc0MzMxLCJpc3MiOiJmaXJlYmFzZS1hZG1pbnNkay1peXhjdkBmaXItYXV0aC04ZDgwMy5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsInN1YiI6ImZpcmViYXNlLWFkbWluc2RrLWl5eGN2QGZpci1hdXRoLThkODAzLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwidWlkIjoidzNyV1FBcEZZWld3VW5za3BWSVFkSzFKS0poMSJ9.dMp3BpBINZuSLh7X4wiqClqT0H8WTqwKuWfelQY5n3f7gzBcV8sJkaH4-eqzwLv8vX5YDAehX2DgGgCnxoWWzzC6xxPWE0GGbZt0twFzF6pX1bKojTcLE_RPFscMdRLj5lqKPTE51qMQONAVLAH7EN4W9AmNi1eC_dUmEpmLHgEprbixCK07Gs4AKCMFqszcL87Rh3gXSv39oVa-UPHi8r8KfRs1jQcqUYk_wwGrXCfgjKw_sCS5Xue84vIjiHl_r1LVSMKk21Bcg4riHQ2hcJ-lDOL52SRu-35ZXqCWopBG40IsIsql5kEXYvUJSw6uak3Onu_cW6aZ3uSlFO7Ftg",),
             // Home_1(),
-            RestaurantHomePage(name: 'khalid',),
+          //  RestaurantHomePage(name: 'khalid',),
           ]),
         ),
       ),
