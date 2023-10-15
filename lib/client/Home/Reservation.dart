@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../../payment/payment.dart';
 //import 'package:intl_extension/intl_extension.dart';
 
 //import 'package:intl/intl.dart';
@@ -449,7 +451,15 @@ class _ReservationState extends State<Reservation> {
             ),
             ElevatedButton(
               onPressed: () {
-                makeReservation();               // Add your button's click action here
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const paymentpage()),
+                );
+
+
+                makeReservation();
+
+                // Add your button's click action here
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,

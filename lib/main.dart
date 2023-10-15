@@ -1,3 +1,6 @@
+import 'package:dine_easy/payment/Bank_card.dart';
+import 'package:dine_easy/payment/Wallet.dart';
+import 'package:dine_easy/payment/payment.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './client/./client_signin/loginpg.dart';
@@ -76,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           body:  TabBarView(children: [
             Home_2(),
-           // Home_1(),
+            // Home_1(),
             RestaurantHomePage(name: 'khalid',),
           ]),
         ),
